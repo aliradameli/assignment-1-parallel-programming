@@ -4,6 +4,7 @@
 #include <string.h>
 #include <inttypes.h>
 #include <cpuid.h>
+#include <x86intrin.h>
 
 
 
@@ -79,11 +80,10 @@ void extract_cpu_details(void) {
            (threads_per_core_max > 1) ? "Hyper-Threading ACTIVE" : "Hyper-Threading DISABLED");
     printf("Total Logical Processors (Threads): %u\n", total_logical_cpus);
     printf("Max Addressable APIC IDs (Leaf 1) : %u\n", max_apic_ids);
-    printf("Note for Hybrid CPU (i9-14900HX)  : 24 Physical Cores (8 P-Cores + 16 E-Cores)\n\n");
 
 
     printf("============================================================\n");
-    printf(" 4. PROCESSOR FREQUENCY (Leaf 0x16 vs Manufacturer Spec)\n");
+    printf(" 4. PROCESSOR FREQUENCY\n");
     printf("============================================================\n");
 
     if (max_std_leaf >= 0x16) {
@@ -96,11 +96,7 @@ void extract_cpu_details(void) {
         printf("CPUID Leaf 0x16 Base Frequency : %u MHz\n", base_mhz);
         printf("CPUID Leaf 0x16 Max Frequency  : %u MHz\n", max_mhz);
         printf("CPUID Leaf 0x16 Bus Frequency  : %u MHz\n", bus_mhz);
-        if (base_mhz == 0 && max_mhz == 0) {
-            printf("  -> [Note: Returns 0 MHz because Windows Hypervisor (VBS) or\n");
-            printf("     hybrid P/E-core firmware masks legacy single-domain Leaf 0x16]\n");
-        }
-        printf("Official Intel Spec (i9-14900HX): Base 2200 MHz (P) / 1600 MHz (E) | Max Turbo 5800 MHz\n\n");
+
     }
 
  
@@ -132,7 +128,7 @@ void extract_cpu_details(void) {
 
 
     printf("============================================================\n");
-    printf(" 6A. CACHE HIERARCHY (CPUID Leaf 0x04)\n");
+    printf(" 6A. CACHE HIERARCHY\n");
     printf("============================================================\n");
 
     if (max_std_leaf >= 0x04) {
@@ -167,7 +163,7 @@ void extract_cpu_details(void) {
     printf("\n");
 
     printf("============================================================\n");
-    printf(" 6B. TLB INFORMATION (CPUID Leaf 0x18)\n");
+    printf(" 6B. TLB INFORMATION\n");
     printf("============================================================\n");
 
     if (max_std_leaf >= 0x18) {
@@ -209,6 +205,7 @@ void extract_cpu_details(void) {
 }
 
 typedef union {
+    __m128i  xmm;
     uint8_t  u8[16];
     int8_t   i8[16];
     uint16_t u16[8];
@@ -256,7 +253,7 @@ int main(void) {
     for (int i = 0; i < 16; ++i) {
         sample.u8[i] = (uint8_t)(10 + i * 16);
     }
-
+    // sample.xmm = _mm_add_epi8(sample.xmm,sample.xmm);
     print_128bit(&sample, "u8");
     print_128bit(&sample, "i8");
     print_128bit(&sample, "u16");
