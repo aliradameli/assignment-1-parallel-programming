@@ -33,7 +33,7 @@ struct Particle {
 // ---------------------------------------------------------------------------
 
 static constexpr float G_CONST   = 800.0f;    // N-body gravitational constant
-static constexpr float SOFTENING = 16.0f;     // prevents singularity at r=0
+static constexpr float SOFTENING = 0.0001f;     // prevents singularity at r=0
 static constexpr float GRAVITY   = 400.0f;    // pixels/s² downward
 static constexpr float DRAG      = 0.15f;     // air resistance coefficient
 static constexpr float BOUNCE    = 0.35f;     // energy retained on bounce

@@ -23,10 +23,10 @@
 // ---------------------------------------------------------------------------
 static constexpr int   WINDOW_W      = 1280;
 static constexpr int   WINDOW_H      = 720;
-static constexpr int   PARTICLE_MIN  = 50;
+static constexpr int   PARTICLE_MIN  = 2;
 static constexpr int   PARTICLE_MAX  = 5000;
 static constexpr int   DEFAULT_COUNT = 500;
-static constexpr float FIRE_POWER    = 600.0f;   // max initial shrapnel speed
+static constexpr float FIRE_POWER    = 900.0f;   // max initial shrapnel speed
 
 // ---------------------------------------------------------------------------
 // Entry point

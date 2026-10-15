@@ -41,15 +41,18 @@ void init_particles(Particle* p, int count,
 {
     for (int i = 0; i < count; ++i) {
         float angle = rand_range(0.0f, 6.2831853f);
-        float speed = rand_range(30.0f, power);
+        float speed = rand_range(0.0001f, power);
 
         p[i].x        = cx;
         p[i].y        = cy;
         p[i].vx       = speed * cosf(angle);
         p[i].vy       = speed * sinf(angle);
-        p[i].mass     = rand_range(0.5f, 2.5f);
+
+        p[i].mass     = rand_range(0.5f, 250.0f);
+        
+       
         p[i].lifetime = rand_range(4.0f, MAX_LIFE);
-        p[i].r = p[i].g = p[i].b = 1.0f;
+        p[i].r = p[i].g = p[i].b = 100.0f;
     }
 }
 
@@ -85,6 +88,7 @@ static inline void nbody_forces(Particle* p, int count, float dt, int i)
     p[i].vx += ax * dt;
     p[i].vy += ay * dt;
 }
+static constexpr float MAX_SPEED    = 900.0f;   // max initial shrapnel speed
 
 /// Apply gravity, drag, position, bounds, lifetime, colour to one particle.
 static inline void apply_physics(Particle* p, float dt,
@@ -128,9 +132,10 @@ static inline void apply_physics(Particle* p, float dt,
     // 6. Colour: rainbow mapped by speed, fades with lifetime
     // Fast particles = blue/violet, medium = green/yellow, slow = red/orange
     float spd2 = p[i].vx * p[i].vx + p[i].vy * p[i].vy;
-    float t    = spd2 / 200000.0f;
-    if (t > 1.0f) t = 1.0f;
-    float life = p[i].lifetime / MAX_LIFE;
+    const float t = fminf(1.0f, spd2 / (MAX_SPEED * MAX_SPEED));
+
+    const float fading_scale = 12*fmaxf(
+        0.0f, fminf(1.0f, p[i].lifetime / MAX_LIFE));
 
     float r = 0.0f, g = 0.0f, b = 0.0f;
     if (t < 0.25f) {
@@ -156,7 +161,7 @@ static inline void apply_physics(Particle* p, float dt,
     }
 
     // Add per-particle hue variation based on index (rainbow explosion!)
-    float hueShift = (float)i * 0.382f;  // golden ratio offset
+    float hueShift = 0.002f;  // golden ratio offset
     float cs = cosf(hueShift);
     float sn = sinf(hueShift);
     // Rotate hue slightly based on particle index
@@ -165,9 +170,10 @@ static inline void apply_physics(Particle* p, float dt,
     if (rr < 0.0f) rr = 0.0f;
     if (gg < 0.0f) gg = 0.0f;
 
-    p[i].r = rr * life;
-    p[i].g = gg * life;
-    p[i].b = b  * life;
+    p[i].r = rr * fading_scale;
+    p[i].g = gg * fading_scale;
+    p[i].b = b  * fading_scale;
+          
 }
 
 // ===========================================================================
@@ -186,12 +192,12 @@ void update_scalar(Particle* p, int count, float dt, int width, int height)
 }
 
 // ===========================================================================
-// 2. SIMD  (STUB — students implement AVX2 vectorisation of inner loop)
+// 2. SIMD  (STUB — students implement AVX2 vectorization of inner loop)
 // ===========================================================================
 
 void update_simd(Particle* p, int count, float dt, int width, int height)
 {
-    // TODO: vectorise nbody_forces() with _mm256_rsqrt_ps() etc.
+    // TODO: vectorize nbody_forces() with _mm256_rsqrt_ps() etc.
     update_scalar(p, count, dt, width, height);
 }
 
