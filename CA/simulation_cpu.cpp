@@ -98,10 +98,9 @@ static inline void apply_physics(Particle* p, float dt,
     p[i].vy += GRAVITY * dt;
 
     // 2. Apply air drag (dampens velocity)
-    float drag_factor = 1.0f - (DRAG * dt);
-    if (drag_factor < 0.0f) drag_factor = 0.0f;
-    p[i].vx *= drag_factor;
-    p[i].vy *= drag_factor;
+    
+    p[i].vx -= p[i].vx * DRAG * 1/p[i].mass * dt;
+    p[i].vy -= p[i].vy * DRAG * 1/p[i].mass * dt;
 
     // 3. Update position based on velocity
     p[i].x += p[i].vx * dt;
