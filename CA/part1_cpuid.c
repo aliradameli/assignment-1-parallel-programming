@@ -93,9 +93,9 @@ void extract_cpu_details(void) {
         unsigned int max_mhz  = fb & 0xFFFF;
         unsigned int bus_mhz  = fc & 0xFFFF;
 
-        printf("CPUID Leaf 0x16 Base Frequency : %u MHz\n", base_mhz);
-        printf("CPUID Leaf 0x16 Max Frequency  : %u MHz\n", max_mhz);
-        printf("CPUID Leaf 0x16 Bus Frequency  : %u MHz\n", bus_mhz);
+        printf("CPUID Base Frequency : %u MHz\n", base_mhz);
+        printf("CPUID Max Frequency  : %u MHz\n", max_mhz);
+        printf("CPUID Bus Frequency  : %u MHz\n", bus_mhz);
 
     }
 
@@ -249,11 +249,11 @@ int main(void) {
     printf(" PART 1.2: 128-BIT UNION MEMORY INTERPRETATION\n");
     printf("============================================================\n");
 
-    Data128 sample;
+    __attribute__((aligned(128))) Data128 sample;
     for (int i = 0; i < 16; ++i) {
         sample.u8[i] = (uint8_t)(10 + i * 16);
     }
-    // sample.xmm = _mm_add_epi8(sample.xmm,sample.xmm);
+    sample.xmm = _mm_add_epi8(sample.xmm,sample.xmm);
     print_128bit(&sample, "u8");
     print_128bit(&sample, "i8");
     print_128bit(&sample, "u16");
