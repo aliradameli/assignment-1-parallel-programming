@@ -105,9 +105,7 @@ int main(int /*argc*/, char* /*argv*/[])
                     };
                     int idx = rand() % 5;
                     printf("%s  Impact at (%.0f, %.0f) — %d shrapnel particles unleashed!  \033[1;32m(>_<)b\033[0m\n",
-                           fire_emoji[idx], mx, my, particle_count);
-                    printf("\033[1;33m speedup: %.2f× \033[0m\n",
-                            (time_simd > 0) ? (double)time_scalar / time_simd : 1.0);       
+                           fire_emoji[idx], mx, my, particle_count);     
                 }
                 break;
 
@@ -116,7 +114,12 @@ int main(int /*argc*/, char* /*argv*/[])
                 case SDLK_ESCAPE:
                     running = false;
                     break;
-                case SDLK_1: mode = ComputeMode::SCALAR; break;
+                case SDLK_1:{
+                    printf("\033[1;33m speedup: %.2f× \033[0m\n",
+                        (time_simd > 0) ? (double)time_scalar / time_simd : 1.0);  
+                    mode = ComputeMode::SCALAR; 
+                    break;
+                }
                 case SDLK_2: mode = ComputeMode::SIMD;   break;
                 case SDLK_3: mode = ComputeMode::OPENMP; break;
                 case SDLK_4: mode = ComputeMode::CUDA;   break;
