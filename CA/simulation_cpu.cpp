@@ -56,7 +56,9 @@ void init_particles(Particle* p, int count,
         p[i].r = p[i].g = p[i].b = 100.0f;
     }
 }
-
+#include 	"ipp.h"
+Ipp64u start, end;
+Ipp64u time_scalar, time_simd;
 // ===========================================================================
 // Per-frame N-body update helpers
 // ===========================================================================
@@ -183,8 +185,15 @@ static inline void apply_physics(Particle* p, float dt,
 void update_scalar(Particle* p, int count, float dt, int width, int height)
 {
     // N-body  (O(n^2) — the heavy part)
-    for (int i = 0; i < count; ++i)
+    start = 0;
+    end = 0;
+    for (int i = 0; i < count; ++i){
+
+        start += ippGetCpuClocks()/count;
         nbody_forces(p, count, dt, i);
+        end += ippGetCpuClocks()/count;
+    }
+    time_scalar = end - start;
 
     // Per-particle physics
     for (int i = 0; i < count; ++i)
@@ -272,8 +281,15 @@ static inline void nbody_forces_simd(Particle* p, int count, float dt, int i){
 void update_simd(Particle* p, int count, float dt, int width, int height)
 {
     // TODO: vectorize nbody_forces() with _mm256_rsqrt_ps() dsf.
-    for (int i = 0; i < count; ++i)
+    start = 0;
+    end = 0;
+    for (int i = 0; i < count; ++i){
+
+        start += ippGetCpuClocks()/count;
         nbody_forces_simd(p, count, dt, i);
+        end += ippGetCpuClocks()/count;
+    }
+    time_simd = end - start;
     for (int i = 0; i < count; ++i)
         apply_physics(p, dt, width, height, i);
 }
