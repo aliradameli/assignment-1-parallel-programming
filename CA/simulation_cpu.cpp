@@ -7,6 +7,7 @@
 
 #include <math.h>
 #include <stdlib.h>
+#include "x86intrin.h"
 
 #ifdef _OPENMP
 #  include <omp.h>
@@ -194,10 +195,87 @@ void update_scalar(Particle* p, int count, float dt, int width, int height)
 // 2. SIMD  (STUB — students implement AVX2 vectorization of inner loop)
 // ===========================================================================
 
+
+static inline void nbody_forces_simd(Particle* p, int count, float dt, int i){
+
+    float ax = 0.0f;
+    float ay = 0.0f;
+    float xi = p[i].x;
+    float yi = p[i].y;
+
+    float dx,dy,dist_sq,inv_dist,inv_dist3,F;
+    int j; 
+
+    __m128 xi_vec = _mm_set_ps1(xi);
+    __m128 yi_vec = _mm_set_ps1(yi);
+
+    __m128 ax_vec = _mm_setzero_ps();
+    __m128 ay_vec = _mm_setzero_ps();
+
+    // removing the i==j case because xi - xj and yi - yj will be 0 and will not contribute to the sum
+    for (j = 0; j + 4 <= count; j+=4) {
+
+        __m128 x_vec = _mm_set_ps(p[j+3].x, p[j+2].x, p[j+1].x, p[j].x);
+        __m128 y_vec = _mm_set_ps(p[j+3].y, p[j+2].y, p[j+1].y, p[j].y);
+
+        __m128 dx_vec = _mm_sub_ps(x_vec, xi_vec);
+        __m128 dy_vec = _mm_sub_ps(y_vec, yi_vec);
+
+        __m128 dist_sq_vec = _mm_add_ps(_mm_add_ps(_mm_mul_ps(dx_vec, dx_vec), _mm_mul_ps(dy_vec, dy_vec)), _mm_set_ps1(SOFTENING));
+
+        // 1.0f / (r^2 + SOFTENING)^(3/2)
+        __m128 inv_dist_vec  = _mm_rsqrt_ps(dist_sq_vec);
+        __m128 inv_dist3_vec = _mm_mul_ps(_mm_mul_ps(inv_dist_vec, inv_dist_vec), inv_dist_vec);
+
+        __m128 mass_vec = _mm_set_ps(p[j+3].mass, p[j+2].mass, p[j+1].mass, p[j].mass);
+        __m128 F_vec    = _mm_mul_ps(_mm_set_ps1(G_CONST), _mm_mul_ps(mass_vec, inv_dist3_vec));
+
+
+
+        ax_vec = _mm_add_ps(ax_vec, _mm_mul_ps(dx_vec, F_vec));
+        ay_vec = _mm_add_ps(ay_vec, _mm_mul_ps(dy_vec, F_vec));
+    }
+
+    ax_vec = _mm_hadd_ps(ax_vec, ax_vec);
+    ax_vec = _mm_hadd_ps(ax_vec, ax_vec);
+
+    ay_vec = _mm_hadd_ps(ay_vec, ay_vec);
+    ay_vec = _mm_hadd_ps(ay_vec, ay_vec);
+
+    ax = _mm_cvtss_f32(ax_vec);
+    ay = _mm_cvtss_f32(ay_vec);
+
+    // tail: remaining 0-3 elements
+    for (; j < count; j++){
+        
+        dx = p[j].x - xi;
+        dy = p[j].y - yi;
+        dist_sq = (dx * dx) + (dy * dy) + SOFTENING;
+
+        // 1.0f / (r^2 + SOFTENING)^(3/2)
+        inv_dist  = 1.0f / sqrtf(dist_sq);
+        inv_dist3 = inv_dist * inv_dist * inv_dist;
+        F         = G_CONST * p[j].mass * inv_dist3;
+
+        ax += dx * F;
+        ay += dy * F;
+    }
+
+  
+
+
+    p[i].vx += ax * dt;
+    p[i].vy += ay * dt;
+}
+
+
 void update_simd(Particle* p, int count, float dt, int width, int height)
 {
-    // TODO: vectorize nbody_forces() with _mm256_rsqrt_ps() etc.
-    update_scalar(p, count, dt, width, height);
+    // TODO: vectorize nbody_forces() with _mm256_rsqrt_ps() dsf.
+    for (int i = 0; i < count; ++i)
+        nbody_forces_simd(p, count, dt, i);
+    for (int i = 0; i < count; ++i)
+        apply_physics(p, dt, width, height, i);
 }
 
 // ===========================================================================
